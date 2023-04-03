@@ -27,8 +27,8 @@ def scan_last_week(date_list, issue_number):
         d = date[0]
         tz = date[1].lower()
         for i in issue_range:
-            #url = f"https://aquariumdrunkard.com/{d.year}/{d.month:02}/{d.day:02}/the-aquarium-drunkard-show-sirius-xmu-7pm-{tz}-channel-35-{i}/"
-            url = "https://aquariumdrunkard.com/2023/03/22/the-aquarium-drunkard-show-sirius-xmu-7pm-pdt-channel-35-82/"
+            url = f"https://aquariumdrunkard.com/{d.year}/{d.month:02}/{d.day:02}/the-aquarium-drunkard-show-sirius-xmu-7pm-{tz}-channel-35-{i}/"
+            #url = "https://aquariumdrunkard.com/2023/03/22/the-aquarium-drunkard-show-sirius-xmu-7pm-pdt-channel-35-82/"
             response = requests.get(url)
             if response.status_code == 200:
                 return url
