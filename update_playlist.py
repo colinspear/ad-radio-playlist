@@ -125,8 +125,7 @@ sp_oauth = SpotifyOAuth(
 
 try:
     # Load the refresh token from the file
-    with open(c_path / "refresh_token.txt", "r") as f:
-        refresh_token = f.read()
+    refresh_token = os.getenv('REFRESH_TOKEN')
     access_token = sp_oauth.refresh_access_token(refresh_token)["access_token"]
 
 except FileNotFoundError:
