@@ -21,16 +21,16 @@ def date_range(start_date, end_date):
 
 
 def scan_last_week(date_list, issue_number):
-    issue_range = list(range(60, issue_number+2))
+    issue_range = list(range(issue_number-20, issue_number+5))
     issue_range.reverse()
     for date in date_list:
         d = date[0]
         tz = date[1].lower()
         for i in issue_range:
             url = f"https://aquariumdrunkard.com/{d.year}/{d.month:02}/{d.day:02}/the-aquarium-drunkard-show-sirius-xmu-7pm-{tz}-channel-35-{i}/"
-            #url = "https://aquariumdrunkard.com/2023/03/22/the-aquarium-drunkard-show-sirius-xmu-7pm-pdt-channel-35-82/"
             response = requests.get(url)
             if response.status_code == 200:
+                print(f'Matching url found: {url}')
                 return url
     return None
 
@@ -57,8 +57,10 @@ def create_playlist(sp, artists_songs):
     
     # 3. Search for each song and add it to the playlist
     tracks = []
-    for artist, song in artists_songs.items():
-        result = sp.search(q=f"{artist} {song}", type="track")
+    #for artist, song in artists_songs.items():
+    #    result = sp.search(q=f"{artist} {song}", type="track")
+    for song in artists_songs:
+        result = sp.search(q=f"{song}", type="track")
         if len(result["tracks"]["items"]) > 0:
             tracks.append(result["tracks"]["items"][0]["id"])
     
@@ -87,7 +89,6 @@ t = datetime.now()
 today = datetime(t.year, t.month, t.day, t.hour, t.minute, tzinfo=ZoneInfo("America/Los_Angeles"))
 start_date = (today - timedelta(days=7))
 
-#date_list = list(date_range(start_date, today))
 date_list = [(d, d.tzname()) for d in date_range(start_date, today)]
 date_list.reverse()
 
@@ -108,12 +109,6 @@ if response.status_code == 200:
 
     artists_songs = {}
     songs_list = songs_text.split(' ++ ')[1:]
-    for s in songs_list:
-        try:
-            artists_songs[s.split(' – ')[0]] = s.split(' – ')[1]
-        except IndexError:
-            artists_songs[s.split(' :: ')[0]] = s.split(' :: ')[1]
-        # Do something with the HTML content, like save it to a file or parse it
 else:
     print(f"Failed to fetch the URL {url}. Response code: {response.status_code}")
     sys.exit()
@@ -125,7 +120,9 @@ sp_oauth = SpotifyOAuth(
 
 try:
     # Load the refresh token from the file
-    refresh_token = os.getenv('REFRESH_TOKEN')
+    with open('refresh_token.txt') as rf:
+        refresh_token = rf.readline()
+
     access_token = sp_oauth.refresh_access_token(refresh_token)["access_token"]
 
 except FileNotFoundError:
@@ -146,7 +143,7 @@ except FileNotFoundError:
         
 sp = spotipy.Spotify(auth=access_token)
 
-playlist = create_playlist(sp, artists_songs)
+playlist = create_playlist(sp, songs_list)
 
 # Upload the new image to Spotify and get its URL
 #image_url = sp.playlist_upload_cover_image(playlist['id'], image)
