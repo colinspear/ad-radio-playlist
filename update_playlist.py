@@ -21,17 +21,22 @@ def date_range(start_date, end_date):
 
 
 def scan_last_week(date_list, issue_number):
-    issue_range = list(range(issue_number-20, issue_number+5))
+    issue_range = list(range(issue_number-10, issue_number+5))
     issue_range.reverse()
     for date in date_list:
         d = date[0]
         tz = date[1].lower()
         for i in issue_range:
+            #url = f'https://aquariumdrunkard.com/2023/10/18/the-aquarium-drunkard-show-sirius-xmu-7pm-pdt-channel-35-111/'
             url = f"https://aquariumdrunkard.com/{d.year}/{d.month:02}/{d.day:02}/the-aquarium-drunkard-show-sirius-xmu-7pm-{tz}-channel-35-{i}/"
+            print(f'Attempting url {url}')
             response = requests.get(url)
             if response.status_code == 200:
                 print(f'Matching url found: {url}')
                 return url
+    max_date = max([d[0] for d in date_list]).strftime("%Y-%m-%d")
+    min_date = min([d[0] for d in date_list]).strftime("%Y-%m-%d")
+    print(f'No matching url found.\n\tIssue range: [{min(issue_range)}, {max(issue_range)}]\n\tDate range: [{min_date}, {max_date}]')
     return None
 
 
