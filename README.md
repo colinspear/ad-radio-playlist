@@ -1,6 +1,13 @@
 # Aquarium Drunkard Radio
 
-A wee little program that scrapes the song list of the weekly [Aquarium Drunkard](https://aquariumdrunkard.com/) Radio Show and makes a Spotify playlist of it.
+A dockerized Python app that recreates the [Aquarium Drunkard Radio Show](https://aquariumdrunkard.com/category/sirius/) as a Spotify playlist. Updates weekly.
 
-It is probably better to listen directly. Definitely check out all their offerings and once you realize how wonderful they are, [support them on Patreon](https://www.patreon.com/aquariumdrunkard)
+If you don't know [Aquarium Drunkard](https://aquariumdrunkard.com/), definitely go check them out and [support them on Patreon](https://www.patreon.com/aquariumdrunkard). 
 
+Packages used: requests, beautiful-soup, spotipy, dotenv, standard library
+
+## Build instructions:
+
+**Note: requires an active Spotify API token**
+ 
+ TBC
