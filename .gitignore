@@ -2,3 +2,4 @@
 .cache
 logs/
 refresh_token.txt
+__pycache__/
