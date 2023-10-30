@@ -59,6 +59,7 @@ $ uvicorn ad_radio_playlist:app --host 127.0.0.1 --port 8099
 
 3. Navigate to `127.0.0.1:8099` (or `localhost:8099`) in a browser
 4. Click on "Authorize" and grant permissions when prompted.
+5. Find your new Aquarium Drunkard playlist on Spotify and sit back and enjoy the musical fruits of your labor.
 
 ## License
 
