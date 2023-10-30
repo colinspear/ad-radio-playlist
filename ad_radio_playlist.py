@@ -12,17 +12,16 @@ from bs4 import BeautifulSoup
 
 
 # Spotify credentials
-client_id = os.getenv("SPOTIPY_CLIENT_ID")
-client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
+client_id = os.getenv("CLIENT_ID")
+client_secret = os.getenv("CLIENT_SECRET")
 redirect_uri = os.getenv("REDIRECT_URI")
 playlist_id = os.getenv("PLAYLIST_ID")
-print(playlist_id)
 
 auth_url = 'https://accounts.spotify.com/authorize'
 scope = [
     "playlist-modify-public", 
     # "ugc-image-upload", 
-    "playlist-read-private",
+    # "playlist-read-private",
     "playlist-modify-private"
 ]
 
