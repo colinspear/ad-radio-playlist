@@ -44,7 +44,6 @@ def get_access_token(auth_code: str):
         },
         auth=(client_id, client_secret),
     )
-    print(response.json())
     if response.status_code == 200:
         access_token = response.json()["access_token"]
         return {"Authorization": "Bearer " + access_token}
@@ -148,7 +147,6 @@ def populate_playlist(playlist_id, headers, track_uris):
 @app.get("/")
 async def auth():
     auth_url = f"https://accounts.spotify.com/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&scope={' '.join(scope)}"
-    print(auth_url)
     return HTMLResponse(content=f'<a href="{auth_url}">Authorize</a>')
 
 
@@ -158,7 +156,6 @@ async def callback(code):
     # print(f"Headers: {headers}")
     # print(f'Scope: ', scope)
     playlist_id = get_playlist_id()
-    print('florf', playlist_id)
 
     response = requests.get("https://api.spotify.com/v1/me", headers=headers)
     user_id = response.json()["id"]
