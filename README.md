@@ -18,15 +18,15 @@ If you don't know [Aquarium Drunkard](https://aquariumdrunkard.com/), definitely
 - Clone the repository and step inside.
 
 ```
-$ git clone https://github.com/colinspear/ad-radio-playlist.git
-$ cd ad-radio-playlist
+git clone https://github.com/colinspear/ad-radio-playlist.git
+cd ad-radio-playlist
 ```
 
 - Set the required environment variables:
 
 ```
-$ cp env-template .env
-$ vi .env    # Replace `<VALUES>`'s with your values in vim or another editor.
+cp env-template .env
+vi .env    # Replace `<VALUES>`'s with your values in vim or another editor.
 ```
 
 ## Usage
@@ -35,13 +35,13 @@ $ vi .env    # Replace `<VALUES>`'s with your values in vim or another editor.
 1. Build the docker image:
 
 ```
-$ docker build -t ad-radio-playlist .
+docker build -t ad-radio-playlist .
 ```
 
 2. Run the image, specifying your `.env` file and exposing port 8099:
 
 ```
-$ docker run --env-file .env -p 8099:8099 ad-radio-playlist
+docker run --env-file .env -p 8099:8099 ad-radio-playlist
 ```
 
 3. Navigate to `127.0.0.1:8099`, click on "Authorize" and grant permissions when prompted.
@@ -52,9 +52,9 @@ $ docker run --env-file .env -p 8099:8099 ad-radio-playlist
 2. Install required packages with pip, set env vars, and run app.
 
 ```
-$ pip install -r requirements.txt
-$ set -a; source .env; set +a
-$ uvicorn ad_radio_playlist:app --host 127.0.0.1 --port 8099
+pip install -r requirements.txt
+set -a; source .env; set +a
+uvicorn ad_radio_playlist:app --host 127.0.0.1 --port 8099
 ```
 
 3. Navigate to `127.0.0.1:8099` (or `localhost:8099`) in a browser
