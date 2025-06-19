@@ -1,0 +1,7 @@
+# Copy this file to .env and fill in your Spotify credentials
+# Run: cp env-template .env
+CLIENT_ID=<YOUR_SPOTIFY_CLIENT_ID>
+CLIENT_SECRET=<YOUR_SPOTIFY_CLIENT_SECRET>
+REDIRECT_URI=http://127.0.0.1:8099/callback
+# Optional: supply an existing playlist ID to update it; leave blank to let the app create a new playlist
+PLAYLIST_ID=<OPTIONAL_EXISTING_PLAYLIST_ID>
