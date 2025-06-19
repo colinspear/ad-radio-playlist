@@ -6,11 +6,19 @@ import requests
 import base64
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv, set_key
+
 from bs4 import BeautifulSoup
 
 # Load environment variables from .env
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path)
+
+# Validate required environment variables
+import sys
+required_env = ["CLIENT_ID", "CLIENT_SECRET", "REDIRECT_URI"]
+missing_env = [var for var in required_env if not os.getenv(var)]
+if missing_env:
+    raise SystemExit(f"Error: Missing environment variables: {', '.join(missing_env)}")
 
 # Spotify credentials
 CLIENT_ID = os.getenv("CLIENT_ID")

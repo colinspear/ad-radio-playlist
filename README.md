@@ -1,5 +1,7 @@
 # Aquarium Drunkard Radio
 
+**Note: Aquarium Drunkard no longer shares their radio playslit publicly. This repo is retained for legacy purposes.**
+
 A dockerized Python FastAPI app that recreates the [Aquarium Drunkard Radio Show](https://aquariumdrunkard.com/category/sirius/) as a Spotify playlist. Updates weekly.
 
 If you don't know [Aquarium Drunkard](https://aquariumdrunkard.com/), definitely go check them out and [support them on Patreon](https://www.patreon.com/aquariumdrunkard). 
