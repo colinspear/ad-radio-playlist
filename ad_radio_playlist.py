@@ -1,15 +1,26 @@
-#!/home/cspear/.venv/ad-radio-playlist/bin/python
+#!/usr/bin/env python3
 
 import os
 import re
 import requests
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from bs4 import BeautifulSoup
 
+
+# Validate required environment variables
+import sys
+required_env = ["CLIENT_ID", "CLIENT_SECRET", "REDIRECT_URI"]
+missing_env = [var for var in required_env if not os.getenv(var)]
+if missing_env:
+    raise SystemExit(f"Error: Missing environment variables: {', '.join(missing_env)}")
 
 # Spotify credentials
 client_id = os.getenv("CLIENT_ID")
@@ -30,7 +41,9 @@ playlist_description = "Songs from the Aquarium Drunkard Radio Show. Updated wee
 
 app = FastAPI()
 
-def get_playlist_id(playlist_id=playlist_id):
+def get_playlist_id(playlist_id_arg=None):
+    if playlist_id_arg is not None:
+        return playlist_id_arg
     return playlist_id
 
 
@@ -44,11 +57,15 @@ def get_access_token(auth_code: str):
         },
         auth=(client_id, client_secret),
     )
-    if response.status_code == 200:
-        access_token = response.json()["access_token"]
-        return {"Authorization": "Bearer " + access_token}
-    else:
-        return {"Authorization failed: ": response.json()}
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        raise RuntimeError(f"Failed to get access token ({response.status_code}): {response.text}") from e
+    data = response.json()
+    access_token = data.get("access_token")
+    if not access_token:
+        raise RuntimeError("Failed to get access token: 'access_token' not found in response")
+    return {"Authorization": f"Bearer {access_token}"}
 
 
 def get_latest_episode():
@@ -69,20 +86,21 @@ def get_latest_episode():
 
 def get_artists_songs(url):
     response = requests.get(url)
-    
-    if response.status_code == 200:
-        show_content = response.content
-    else: 
-        print(f'Request to {url} returned status code {response.status_code}')
-    
-    soup = BeautifulSoup(show_content, 'html.parser')
-    # image = soup.find("figure").find("a").get("href")
-    
-    main_text = soup.find("div", {"class": "entry-content"}).get_text()
-    songs_text = [s for s in main_text.split('\n') if re.match(r'SIRIUS', s)][0]
-
-    songs_list = songs_text.split(' ++ ')[1:]
-    return songs_list
+    if response.status_code != 200:
+        raise RuntimeError(f"Failed to fetch show page ({response.status_code}): {url}")
+    # Search raw HTML for the tracklist line starting with 'SIRIUS ++'
+    if hasattr(response, 'content') and isinstance(response.content, (bytes, bytearray)):
+        html = response.content.decode('utf-8', errors='ignore')
+    else:
+        html = getattr(response, 'text', '')
+    match = re.search(r"SIRIUS \+\+ [^<]+", html)
+    if not match:
+        raise RuntimeError(f"No song list found on page: {url} (page may be paywalled or structure changed)")
+    songs_text = match.group(0)
+    parts = songs_text.split(' ++ ')
+    if len(parts) < 2:
+        raise RuntimeError(f"Unexpected song list format on page: {url}")
+    return parts[1:]
 
 
 def get_track_uri(artist_song, headers):
@@ -150,22 +168,23 @@ async def auth():
     return HTMLResponse(content=f'<a href="{auth_url}">Authorize</a>')
 
 
+from fastapi import HTTPException
+
 @app.get("/callback")
 async def callback(code):
     headers = get_access_token(code)
-    # print(f"Headers: {headers}")
-    # print(f'Scope: ', scope)
     playlist_id = get_playlist_id()
-
     response = requests.get("https://api.spotify.com/v1/me", headers=headers)
-    user_id = response.json()["id"]
+    user_id = response.json().get("id")
+    if not user_id:
+        raise HTTPException(status_code=502, detail="Failed to fetch user ID from Spotify")
     print(f"User ID: {user_id}")
-
     latest_episode = get_latest_episode()
-    print("Latest AD Radio episode: ", latest_episode)
-   
-    artists_songs = get_artists_songs(latest_episode)
-    # print(artists_songs)
+    print("Latest AD Radio episode:", latest_episode)
+    try:
+        artists_songs = get_artists_songs(latest_episode)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=f"Failed to parse song list: {e}")
     track_uris = create_track_uri_list(artists_songs, headers)
     
     if not playlist_id:
@@ -179,10 +198,12 @@ async def callback(code):
 
 
 
-# try:
-#     # Load the refresh token from the file
-#     with open('refresh_token.txt') as rf:
-#         refresh_token = rf.readline()
+# if run as script, start the FastAPI server
+if __name__ == "__main__":
+    import uvicorn
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "8099"))
+    uvicorn.run("ad_radio_playlist:app", host=host, port=port)
 
 #     access_token = sp_oauth.refresh_access_token(refresh_token)["access_token"]
 
