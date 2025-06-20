@@ -13,6 +13,9 @@ from bs4 import BeautifulSoup
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path)
 
+# Detect if running in GitHub Actions (CI) environment
+ON_CI = os.getenv("GITHUB_ACTIONS") == "true"
+
 # Validate required environment variables
 import sys
 required_env = ["CLIENT_ID", "CLIENT_SECRET", "REDIRECT_URI"]
@@ -77,11 +80,17 @@ def refresh_tokens():
 
 
 def get_auth_headers():
-    """Get headers with a valid access token, refreshing if necessary."""
+    """Return headers with a valid access token.
+    If the token is expired, fail in CI or attempt refresh locally."""
     if not ACCESS_TOKEN:
-        raise EnvironmentError("ACCESS_TOKEN must be set in .env")
+        raise EnvironmentError("ACCESS_TOKEN must be set as an environment variable.")
     token = ACCESS_TOKEN
     if is_token_expired(token):
+        if ON_CI:
+            raise RuntimeError(
+                "ACCESS_TOKEN has expired. Please generate a new ACCESS_TOKEN and REFRESH_TOKEN and update your GitHub secrets."
+            )
+        # Attempt to refresh locally
         token = refresh_tokens()
     return {"Authorization": f"Bearer {token}"}
 

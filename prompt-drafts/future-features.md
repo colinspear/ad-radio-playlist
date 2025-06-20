@@ -4,3 +4,4 @@
 4. improve track parsing:
     * look for optional pipe (`|`) separating last song from artwork credits
     * add update date to description
+5. switch secret management over to aws secrets manager or similar to enable automatic api token refreshes (spotify and gmail)
