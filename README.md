@@ -1,69 +1,100 @@
-# Aquarium Drunkard Radio
+# ad-radio-playlist
 
-**Note: Aquarium Drunkard no longer shares their radio playslit publicly. This repo is retained for legacy purposes.**
+A Python script and automated workflow that recreates and updates the Aquarium Drunkard Radio Show playlist on Spotify each week.
 
-A dockerized Python FastAPI app that recreates the [Aquarium Drunkard Radio Show](https://aquariumdrunkard.com/category/sirius/) as a Spotify playlist. Updates weekly.
+## Features
 
-If you don't know [Aquarium Drunkard](https://aquariumdrunkard.com/), definitely go check them out and [support them on Patreon](https://www.patreon.com/aquariumdrunkard). 
+- Scrape weekly track lists from Aquarium Drunkard via website or Gmail API
+- Search for tracks on Spotify and collect URIs
+- Create or update a Spotify playlist with the collected tracks
+- Automatic token refresh locally; CI fails loudly on expired tokens to trigger secret rotation
+- Scheduled via GitHub Actions to run weekly (early Tuesday morning US Eastern Time)
+- Includes unit tests for core functionality
 
-## Requirements:
+## Requirements
 
-- Docker
-- Python 3.11
+- Python 3.11 (or compatible 3.x)
+- pip
+- Spotify Developer account for CLIENT_ID, CLIENT_SECRET, and REDIRECT_URI
+- (Optional) Google Cloud OAuth credentials for Gmail API scraping
 
-## Registration
+## Installation
 
-- Set up a Spotify Developers account and register a redirect URI to obtain a Client ID and Secret.
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/colinspear/ad-radio-playlist.git
+   cd ad-radio-playlist
+   ```
 
-## Setup:
+2. Install dependencies:
+   ```bash
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt google-api-python-client google-auth-oauthlib
+   ```
 
-- Clone the repository and step inside.
-
-```
-git clone https://github.com/colinspear/ad-radio-playlist.git
-cd ad-radio-playlist
-```
-
-- Set the required environment variables:
-
-```
-cp env-template .env
-vi .env    # Replace `<VALUES>`'s with your values in vim or another editor.
-```
+3. Create an `.env` file:
+   ```bash
+   cp env-template .env
+   ```
+   Then edit `.env` to set:
+   ```
+   CLIENT_ID=<YOUR_SPOTIFY_CLIENT_ID>
+   CLIENT_SECRET=<YOUR_SPOTIFY_CLIENT_SECRET>
+   REDIRECT_URI=<YOUR_REDIRECT_URI>
+   PLAYLIST_ID=<OPTIONAL_EXISTING_PLAYLIST_ID>
+   ```
+   Next, add your initial OAuth tokens (after completing the Spotify auth flow once):
+   ```
+   ACCESS_TOKEN=<YOUR_SPOTIFY_ACCESS_TOKEN>
+   REFRESH_TOKEN=<YOUR_SPOTIFY_REFRESH_TOKEN>
+   ```
+   If you want to scrape via Gmail instead of web scraping, also add:
+   ```
+   GMAIL_CLIENT_ID=<YOUR_GOOGLE_OAUTH_CLIENT_ID>
+   GMAIL_CLIENT_SECRET=<YOUR_GOOGLE_OAUTH_CLIENT_SECRET>
+   GMAIL_ACCESS_TOKEN=<YOUR_GMAIL_ACCESS_TOKEN>
+   GMAIL_REFRESH_TOKEN=<YOUR_GMAIL_REFRESH_TOKEN>
+   ```
 
 ## Usage
-### Docker
 
-1. Build the docker image:
+Run the update script locally:
+```bash
+python ad_radio_playlist.py
+```
+The script will fetch the latest show, search Spotify for each track, and update (or create) your playlist.
+
+## Automated Updates via GitHub Actions
+
+A scheduled workflow is provided in `.github/workflows/weekly_ad_radio_playlist.yml`. It runs every Tuesday at 10:00 UTC (approximately 5 AM EST/6 AM EDT) and requires the following repository **secrets**:
 
 ```
-docker build -t ad-radio-playlist .
+CLIENT_ID
+CLIENT_SECRET
+REDIRECT_URI
+ACCESS_TOKEN
+REFRESH_TOKEN
+PLAYLIST_ID
+GMAIL_CLIENT_ID
+GMAIL_CLIENT_SECRET
+GMAIL_ACCESS_TOKEN
+GMAIL_REFRESH_TOKEN
 ```
 
-2. Run the image, specifying your `.env` file and exposing port 8099:
+When the Spotify access token expires, the action will fail with a clear error, alerting you to rotate your tokens.
 
+## Testing
+
+Run unit tests with:
+```bash
+pytest
 ```
-docker run --env-file .env -p 8099:8099 ad-radio-playlist
-```
-
-3. Navigate to `127.0.0.1:8099`, click on "Authorize" and grant permissions when prompted.
-
-### From source
-
-1. Create a virtual environment (not required but highly recommended).
-2. Install required packages with pip, set env vars, and run app.
-
-```
-pip install -r requirements.txt
-set -a; source .env; set +a
-uvicorn ad_radio_playlist:app --host 127.0.0.1 --port 8099
-```
-
-3. Navigate to `127.0.0.1:8099` (or `localhost:8099`) in a browser
-4. Click on "Authorize" and grant permissions when prompted.
-5. Find your new Aquarium Drunkard playlist on Spotify and sit back and enjoy the musical fruits of your labor.
 
 ## License
 
-[Mit License](https://github.com/colinspear/ad-radio-playlist/blob/main/LICENSE.md)
+[MIT License](LICENSE.md)
+
+---
+
+If you enjoy what Aquarium Drunkard does, get a subscription at https://aquariumdrunkard.com/ and consider supporting them on Patreon: https://www.patreon.com/aquariumdrunkard
 
