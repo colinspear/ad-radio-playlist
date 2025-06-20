@@ -154,15 +154,98 @@ def get_artists_songs(episode_url):
     except Exception as e:
         raise RuntimeError("Failed to parse artists and songs") from e
 
+# Email-based scraping using Gmail API
+def get_gmail_service():
+    try:
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+    except ImportError as e:
+        raise ImportError("Please install google-api-python-client and google-auth-oauthlib to use Gmail scraping") from e
+    client_id = os.getenv("GMAIL_CLIENT_ID")
+    client_secret = os.getenv("GMAIL_CLIENT_SECRET")
+    token = os.getenv("GMAIL_ACCESS_TOKEN")
+    refresh_token = os.getenv("GMAIL_REFRESH_TOKEN")
+    if not all([client_id, client_secret, token, refresh_token]):
+        raise EnvironmentError(
+            "Gmail API credentials must be set in .env: GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_ACCESS_TOKEN, GMAIL_REFRESH_TOKEN"
+        )
+    creds = Credentials(
+        token,
+        refresh_token=refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=client_id,
+        client_secret=client_secret
+    )
+    service = build("gmail", "v1", credentials=creds)
+    return service
+
+def get_playlist_entries_from_email():
+    service = get_gmail_service()
+    result = service.users().messages().list(
+        userId="me",
+        q="from:aquariumdrunkard@96110637.mailchimpapp.com",
+        # q="from:colinspear@gmail.com",
+        maxResults=1
+    ).execute()
+    messages = result.get("messages", [])
+    print(messages)
+    if not messages:
+        raise RuntimeError("No email found from Aquarium Drunkard")
+    msg_id = messages[0]["id"]
+    msg = service.users().messages().get(
+        userId="me", id=msg_id, format="full"
+    ).execute()
+    payload = msg.get("payload", {})
+    html = None
+    def _extract_html(part):
+        data = part.get("body", {}).get("data")
+        if data:
+            return base64.urlsafe_b64decode(data).decode("utf-8")
+        return None
+    if payload.get("mimeType") == "text/html":
+        html = _extract_html(payload)
+    elif "parts" in payload:
+        for part in payload["parts"]:
+            if part.get("mimeType") == "text/html":
+                html = _extract_html(part)
+                if html:
+                    break
+    if not html and "parts" in payload:
+        def _find_html(parts):
+            for p in parts:
+                if p.get("mimeType") == "text/html":
+                    return _extract_html(p)
+                if "parts" in p:
+                    sub = _find_html(p.get("parts"))
+                    if sub:
+                        return sub
+            return None
+        html = _find_html(payload.get("parts", []))
+    if not html:
+        raise RuntimeError("Could not find HTML content in email")
+    soup = BeautifulSoup(html, "html.parser")
+    paragraphs = soup.find_all("p")
+    line = None
+    for p in paragraphs:
+        text = p.get_text().strip()
+        if re.match(r"^SIRIUS\s+\d+:", text):
+            line = text
+            break
+    if not line:
+        raise RuntimeError("No SIRIUS track list found in email")
+    content = line.split(":", 1)[1].strip()
+    parts = [item.strip() for item in content.split(" ++ ")]
+    entries = [item for item in parts if "–" in item]
+    return entries
+
 
 def update_playlist():
     """Main flow: refresh token, scrape, search, and update Spotify playlist."""
     headers = get_auth_headers()
     user_id = get_user_id(headers)
-    episode_url = get_latest_episode_url()
-    print(f"Found latest episode: {episode_url}")
-    entries = get_artists_songs(episode_url)
-    print(f"Parsed {len(entries)} song entries")
+    # Fetch playlist entries from the latest email
+    entries = get_playlist_entries_from_email()
+    print(f"Parsed {len(entries)} song entries from email")
     uris = []
     for entry in entries:
         try:
