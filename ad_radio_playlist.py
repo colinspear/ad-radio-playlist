@@ -18,7 +18,7 @@ ON_CI = os.getenv("GITHUB_ACTIONS") == "true"
 
 # Validate required environment variables
 import sys
-required_env = ["CLIENT_ID", "CLIENT_SECRET", "REDIRECT_URI"]
+required_env = ["CLIENT_ID", "CLIENT_SECRET", "REFRESH_TOKEN"]
 missing_env = [var for var in required_env if not os.getenv(var)]
 if missing_env:
     raise SystemExit(f"Error: Missing environment variables: {', '.join(missing_env)}")
@@ -28,8 +28,36 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 PLAYLIST_ID = os.getenv("PLAYLIST_ID")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
+
+def get_access_token():
+    """Obtain a fresh access token using the refresh token."""
+    refresh_token = os.getenv("REFRESH_TOKEN")
+    if not refresh_token:
+        raise EnvironmentError("REFRESH_TOKEN must be set as an environment variable.")
+    auth_header = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()
+    headers = {
+        "Authorization": f"Basic {auth_header}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    payload = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+    }
+    try:
+        resp = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+        access = resp.json().get("access_token")
+        if not access:
+            raise RuntimeError("No access token returned from Spotify")
+        return access
+    except requests.RequestException as e:
+        raise RuntimeError(f"Failed to refresh access token: {e}") from e
+
+def get_auth_headers():
+    """Return headers with a valid access token for Spotify API."""
+    token = get_access_token()
+    return {"Authorization": f"Bearer {token}"}
 
 PLAYLIST_NAME = "Aquarium Drunkard Radio"
 PLAYLIST_DESCRIPTION = (
@@ -44,55 +72,10 @@ if not CLIENT_ID or not CLIENT_SECRET:
     raise EnvironmentError("CLIENT_ID and CLIENT_SECRET must be set in .env")
 
 
-def is_token_expired(token):
-    """Return True if the access token is expired (HTTP 401)."""
-    try:
-        resp = requests.get(f"{BASE_URL}/me", headers={"Authorization": f"Bearer {token}"}, timeout=10)
-        return resp.status_code == 401
-    except requests.RequestException as e:
-        raise RuntimeError("Failed to validate access token") from e
 
 
-def refresh_tokens():
-    """Use the refresh token to obtain a new access token and update .env."""
-    if not REFRESH_TOKEN:
-        raise EnvironmentError("REFRESH_TOKEN must be set in .env to refresh tokens.")
-    payload = {
-        "grant_type": "refresh_token",
-        "refresh_token": REFRESH_TOKEN,
-    }
-    auth_header = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()
-    headers = {
-        "Authorization": f"Basic {auth_header}",
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-    try:
-        resp = requests.post("https://accounts.spotify.com/api/token", data=payload, headers=headers, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        new_access = data.get("access_token")
-        new_refresh = data.get("refresh_token", REFRESH_TOKEN)
-        set_key(dotenv_path, "ACCESS_TOKEN", new_access)
-        set_key(dotenv_path, "REFRESH_TOKEN", new_refresh)
-        return new_access
-    except requests.RequestException as e:
-        raise RuntimeError(f"Failed to refresh token: {e}") from e
 
 
-def get_auth_headers():
-    """Return headers with a valid access token.
-    If the token is expired, fail in CI or attempt refresh locally."""
-    if not ACCESS_TOKEN:
-        raise EnvironmentError("ACCESS_TOKEN must be set as an environment variable.")
-    token = ACCESS_TOKEN
-    if is_token_expired(token):
-        if ON_CI:
-            raise RuntimeError(
-                "ACCESS_TOKEN has expired. Please generate a new ACCESS_TOKEN and REFRESH_TOKEN and update your GitHub secrets."
-            )
-        # Attempt to refresh locally
-        token = refresh_tokens()
-    return {"Authorization": f"Bearer {token}"}
 
 
 def get_user_id(headers):
