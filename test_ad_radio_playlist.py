@@ -119,8 +119,8 @@ def test_fetch_xmplaylist_tracks_filters_by_window(monkeypatch):
 
     entries = [
         _make_xm_entry("In Window", ["Artist A"], "sp1", "2025-03-20T03:00:00Z"),
-        _make_xm_entry("Too Early", ["Artist B"], "sp2", "2025-03-20T01:30:00Z"),
         _make_xm_entry("Also In", ["Artist C"], "sp3", "2025-03-20T02:30:00Z"),
+        _make_xm_entry("Too Early", ["Artist B"], "sp2", "2025-03-20T01:30:00Z"),
     ]
 
     def fake_get(url, headers, params, timeout):
