@@ -2,6 +2,7 @@
 # Run: cp env-template .env
 CLIENT_ID=<YOUR_SPOTIFY_CLIENT_ID>
 CLIENT_SECRET=<YOUR_SPOTIFY_CLIENT_SECRET>
+REFRESH_TOKEN=<YOUR_SPOTIFY_REFRESH_TOKEN>
 REDIRECT_URI=http://127.0.0.1:8099/callback
-# Optional: supply an existing playlist ID to update it; leave blank to let the app create a new playlist
-PLAYLIST_ID=<OPTIONAL_EXISTING_PLAYLIST_ID>
+# Optional: supply an existing playlist ID to update it; leave blank to create a new one
+PLAYLIST_ID=
