@@ -14,6 +14,7 @@ import os
 import sys
 import base64
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse, parse_qs
 from zoneinfo import ZoneInfo
 
 import requests
@@ -256,9 +257,14 @@ def fetch_xmplaylist_tracks(start_dt, end_dt, max_pages=20):
         if went_past_window:
             break
 
-        # Use the last entry's id as the pagination cursor
-        last_cursor = results[-1].get("id")
-        if not data.get("next"):
+        # Extract pagination cursor from the "next" URL
+        next_url = data.get("next")
+        if not next_url:
+            break
+        # next_url looks like ".../siriusxmu?last=1773765594465"
+        parsed = parse_qs(urlparse(next_url).query)
+        last_cursor = parsed.get("last", [None])[0]
+        if not last_cursor:
             break
 
     # Return in chronological order (API returns newest first)
